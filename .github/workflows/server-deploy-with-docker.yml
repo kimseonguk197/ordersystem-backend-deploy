@@ -2,7 +2,7 @@ name: Deploy to Ec2 With Docker
 on:
   push:
     branches:
-      - dev
+      - main
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
@@ -22,10 +22,10 @@ jobs:
     - name: Push Docker Image to DockerHub
       run: docker push kimseonguk/ordersystem:latest
 
-    - name: ec2 ssh login and docker run
+    - name: instance1 ec2 ssh login and docker run
       uses: appleboy/ssh-action@master
       with:
-        host: ${{ secrets.EC2_HOST }}
+        host: ${{ secrets.EC2_HOST1 }}
         username: ubuntu
         key: ${{ secrets.EC2_PEMKEY }}
         script: |
@@ -38,10 +38,10 @@ jobs:
           sudo docker pull kimseonguk/ordersystem:latest
           sudo docker rm -f ordersystem || true
 
-          sudo docker run -d --name ordersystem --dns=8.8.8.8 -p 8080:8080 \
+          sudo docker run -d --name ordersystem  -p 8080:8080 \
           -e SPRING_REDIS_HOST=${{ secrets.REDIS_HOST }} \
+          -e JWT_SECRETKEYAT=${{ secrets.AT_SECRET_KEY }} \
+          -e JWT_SECRETKEYRT=${{ secrets.RT_SECRET_KEY }} \
           -e SPRING_DATASOURCE_URL=jdbc:mariadb://${{ secrets.DB_HOST }}:3306/ordersystem \
           -e SPRING_DATASOURCE_USERNAME=admin \
-          -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PW }} \
-          -e CLOUD_AWS_CREDENTIALS_ACCESS_KEY=${{ secrets.AWS_KEY }} \
-          -e CLOUD_AWS_CREDENTIALS_SECRET_KEY=${{ secrets.AWS_SECRET }} kimseonguk/ordersystem:latest
+          -e SPRING_DATASOURCE_PASSWORD=${{ secrets.DB_PW }} kimseonguk/ordersystem:latest
